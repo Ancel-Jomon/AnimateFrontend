@@ -66,6 +66,7 @@ function loadmodel() {
       if (object.type === "SkinnedMesh") {
         skeleton = object.skeleton;
         console.log("Found skeleton:", skeleton);
+        determineDefaultDirections(skeleton);
       }
       // if (object.isMesh) {
       //  skeleton=object.skeleton
@@ -78,126 +79,95 @@ function loadmodel() {
   });
 }
 
-export function change(target: any[]) {
-  //   const axesHelper = new THREE.AxesHelper(1);
+export function changenew(target: any[], parent: string, child: string) {
+  const parentBone = model.getObjectByName(poseBones[parent]);
+  // const childBone = model.getObjectByName(poseBones[child]);
 
-  const leftUpperArm = model.getObjectByName(poseBones.leftUpperArm);
-  const leftLowerArm = model.getObjectByName(poseBones.leftLowerarm);
+  let targetDirection = new THREE.Vector3(target[0], target[1], target[2]);
 
-  //   leftUpperArm.add(axesHelper);
-  //   leftLowerArm.add(axesHelper)
-
-  
-  //   let localDirection = new THREE.Vector3();
-
-  let targetDirection = new THREE.Vector3(
-    target[0][0],
-    target[0][1],
-    target[0][2]
-  );
-
-  //   targetDirection.normalize();
-  //   targetDirection.multiplyScalar(-1)
-
- 
-  
-  // let current3=localDirection.subVectors(current2,current1)
-  //   let current = getBoneVector(leftUpperArm);
-  //
-
-  let localDirection2 = new THREE.Vector3();
-  let localDirection3 = new THREE.Vector3();
-  let current = new THREE.Vector3();
-  leftUpperArm.getWorldPosition(localDirection2);
-  leftLowerArm.getWorldPosition(localDirection3);
-  current.subVectors(localDirection3, localDirection2);
- 
-  current.normalize();
-
-  drawline([current.x, current.y, current.z], arrowHelper1, "ddiff");
-  drawline(
-    [targetDirection.x, targetDirection.y, targetDirection.z],
-    arrowHelper2,
-    "original"
-  );
-  // console.log("before", localDirection2);
-
-  //
-
-  let rotationq = new THREE.Quaternion();
-  //   const angleToRotate = 0;
-
-  var rotationAxis,
-    angleToRotate = 0;
-
-  //   rotationq.setFromUnitVectors(current, targetDirection);
-
-  // console.log(rotationq)
-  var prev = boneRotationHistory.getLastRotation(leftUpperArm);
-  var axis;
-  if (prev == null) {
-    axis = targetDirection;
-    // angle=angleToRotate
-
-    // boneRotationHistory.addRotation(leftUpperArm, current);
-
-    boneRotationHistory.addRotation(leftUpperArm, targetDirection);
-
-    rotationAxis = new THREE.Vector3()
-      .crossVectors(current, targetDirection)
-      .normalize();
-    angleToRotate = current.angleTo(targetDirection);
-    // console.log(angleToRotate,rotationAxis)
-
-    //   console.log(rotationAxis,angleToRotate);
-    
-  } else {
-    axis = prev.axis;
-    //    angle=prev.angle
-    current=prev.axis
-    
-    rotationAxis = new THREE.Vector3()
-      .crossVectors(current, targetDirection)
-      .normalize();
-    angleToRotate = current.angleTo(targetDirection);
-
+  if (parent == "leftUpperLeg") {
+    drawline(
+      [targetDirection.x, targetDirection.y, targetDirection.z],
+      arrowHelper2,
+      "original"
+    );
   }
-  rotationq.setFromAxisAngle(rotationAxis, angleToRotate);
-  rotationq.normalize();
- 
+  // Default bone direction
+  const _tempQuat = new THREE.Quaternion();
+  const _tempMatrix = new THREE.Matrix4();
 
-  //   //     // rotationq.conjugate()
- 
-    if (prev == null || !areVectorsEqual(axis, targetDirection)) {
-      // console.log(axis,targetDirection)
-      // quat.multiply(rotationq)
-      //  console.log("inside")
-      console.log( angleToRotate);
-      leftUpperArm.quaternion.premultiply(rotationq);
-      leftUpperArm.quaternion.normalize();
-      leftUpperArm.updateMatrix();
-      leftLowerArm.updateMatrix();
-      leftLowerArm.updateMatrixWorld(true);
+  _tempMatrix.copy(parentBone.parent.matrixWorld).invert();
+  _tempMatrix.extractRotation(_tempMatrix); // Only keep rotation
+  targetDirection.applyMatrix4(_tempMatrix);
 
-      leftUpperArm.updateMatrixWorld(true);
-      boneRotationHistory.addRotation(leftUpperArm, targetDirection);
-    }
-  
+  calculateRotationToTarget(targetDirection, _tempQuat, parent);
 
-  //   console.log("after",localDirection1.clone().applyQuaternion(leftUpperArm.quaternion).normalize())
+  if (parent == "leftUpperLeg") {
+    drawline(
+      [targetDirection.x, targetDirection.y, targetDirection.z],
+      arrowHelper1,
+      "original"
+    );
+  }
+
+  parentBone.quaternion.slerp(_tempQuat, 0.4);
 }
 
-
-function areVectorsEqual(
-  vec1: THREE.Vector3,
-  vec2: THREE.Vector3,
-  epsilon = 0.001
+function calculateRotationToTarget(
+  direction: THREE.Vector3Like,
+  resultQuat: THREE.Quaternion,
+  name: string
 ) {
-  return (
-    Math.abs(vec1.x - vec2.x) < epsilon &&
-    Math.abs(vec1.y - vec2.y) < epsilon &&
-    Math.abs(vec1.z - vec2.z) < epsilon
-  );
+  const parentBone = model.getObjectByName(poseBones[name]);
+
+  const _defaultDir = new THREE.Vector3(0, 1, 0);
+  const normalizedDirection = new THREE.Vector3(direction.x, direction.y, direction.z).normalize();
+
+//   const axis = new THREE.Vector3();
+//   axis.crossVectors(_defaultDir, direction).normalize();
+//   const angle = Math.acos(_defaultDir.dot(direction));
+
+//   resultQuat.setFromAxisAngle(axis, angle);
+
+    resultQuat.setFromUnitVectors(_defaultDir,normalizedDirection)
+
+  if (name == "leftUpperLeg" || name=="rightUpperLeg") {
+    // resultQuat.setFromUnitVectors(new THREE.Vector3(0,1,0),normalizedDirection)
+    // resultQuat.multiplyQuaternions(new THREE.Quaternion(0,0,1,0),resultQuat)
+    // resultQuat.multiplyQuaternions(resultQuat,new THREE.Quaternion(0,-1,0,0))
+    // resultQuat.invert()
+
+    const correctionQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+    resultQuat.multiply(correctionQuat);
+  }
+
+  
+}
+
+// Create a map of bone-specific default directions (if they differ from y-axis)
+const boneDefaultDirections = new Map();
+
+// Determine the actual default direction of each bone in your skeleton
+function determineDefaultDirections(skeleton: {
+  pose: () => void;
+  bones: any[];
+}) {
+  // Reset the skeleton to its bind pose first
+  skeleton.pose();
+
+  skeleton.bones.forEach((bone) => {
+    // Create a local-to-world direction
+    const worldDir = new THREE.Vector3(0, 1, 0).applyMatrix4(bone.matrixWorld);
+
+    // Store this direction
+    boneDefaultDirections.set(bone.uuid, worldDir);
+    // if (bone.name == "CC_Base_R_Calf") {
+    //   drawline([worldDir.x, worldDir.y, worldDir.z], arrowHelper2, "original");
+    // }
+    // You can also visualize this with arrows for debugging
+    // const arrow = new THREE.ArrowHelper(worldDir, bone.getWorldPosition(new THREE.Vector3()), 1, 0xff0000);
+    // scene.add(arrow);
+  });
 }
 
 function animate() {

@@ -9,6 +9,7 @@ export class Rotationhistory{
     }
 
     getbonehsitory(bone:any){
+        // console.log(bone)
         if (!this.bonehistory.has(bone.uuid)) {
             this.bonehistory.set(bone.uuid, {
                 history: [],
@@ -18,10 +19,10 @@ export class Rotationhistory{
         return this.bonehistory.get(bone.uuid);
     }
 
-    addRotation(bone:any, axis:THREE.Vector3) {
+    addRotation(bone:any, targetDirection:THREE.Vector3) {
         const boneHistory = this.getbonehsitory(bone);
         const rotationData = {
-            axis: axis.clone(),
+            targetDirection: targetDirection.clone(),
             // angle: angle,
             timestamp: Date.now()
         };

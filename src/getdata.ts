@@ -1,5 +1,4 @@
-import { element } from "three/tsl";
-import { change } from "./main";
+import { changenew } from "./main";
 
 var isAnimating = true;
 function callapi() {
@@ -8,14 +7,28 @@ function callapi() {
     .then((data) => plotpoint(data))
     .catch((error) => console.error("Error:", error));
 }
-
+const MEDIAPIPE_POSE_BONES=["leftUpperArm-leftLowerArm",
+    "leftUpperLeg-leftLowerLeg",
+    "rightUpperArm-rightLowerArm",
+    "rightUpperLeg-rightLowerLeg",
+    "leftLowerLeg-leftAngle",
+    "rightLowerLeg-rightAngle",
+    "leftLowerArm-leftWrist",
+    "rightLowerArm-rightWrist"]
 function plotpoint(values: any) {
-  var landmarks = Object.keys(values).map((key) => {
-    return values[key];
-  });
-  // console.log(landmarks)
+//   var landmarks: any[] =[]
+//   console.log(typeof values)
   //  updatePointsfromapi(landmarks)
-  change(landmarks);
+  for (let i=0;i<MEDIAPIPE_POSE_BONES.length;i++){
+    var key=MEDIAPIPE_POSE_BONES[i]
+    const bones=key.split("-")
+    // console.log(bones)
+    // if(bones[0]=="leftLowerArm" && bones[1]=="leftWrist"){
+        changenew(values[key],bones[0],bones[1])
+        // orientBoneWithLookAt(bones[0],values[key])
+        // orientBoneCorrectly(bones[0],values[key])
+    // }
+  }
 
   if (isAnimating) {
     requestAnimationFrame(callapi);
@@ -61,6 +74,6 @@ async function randompints() {
   for (const element of targets) {
     await sleep(2000);
     console.log(element)
-    change(element);
+    // change(element);
   }
 }
