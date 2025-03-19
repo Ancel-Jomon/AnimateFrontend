@@ -2,7 +2,6 @@ import * as THREE from "three";
 
 import { GLTFLoader, OrbitControls } from "three/examples/jsm/Addons.js";
 import { poseBones } from "./bones";
-import { Rotationhistory } from "./rotationhistory";
 import { arrowHelper1, arrowHelper2, drawline } from "./vectorvisualize";
 
 var scene: THREE.Scene,
@@ -16,7 +15,7 @@ export var model: any;
 const h = window.innerHeight;
 const w = window.innerWidth;
 
-const boneRotationHistory = new Rotationhistory();
+
 
 function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -31,28 +30,26 @@ function init() {
   const near = 0.1;
   const far = 1000;
   camera = new THREE.PerspectiveCamera(fov, asratio, near, far);
-  camera.position.z = 3;
-  camera.position.y = 2;
-
+  camera.position.z = 2;
+  camera.position.y = 3;
+  camera.lookAt(new THREE.Vector3(0, 8, 0));
   scene = new THREE.Scene();
   controls = new OrbitControls(camera, renderer.domElement);
 
   scene.background = new THREE.Color("rgb(255, 255, 255)");
 
-  // const light = new THREE.PointLight(0xffffff, 50);
-  // light.position.set(0.8, 1.4, 1.0);
-  // scene.add(light);
+  
 
   const ambientLight = new THREE.AmbientLight();
   scene.add(ambientLight);
 
   const dirlight = new THREE.DirectionalLight("rgb(255, 255, 255)", 1);
   scene.add(dirlight);
-  const axesHelper = new THREE.AxesHelper(2);
-  scene.add(axesHelper);
+  //   const axesHelper = new THREE.AxesHelper(2);
+  //   scene.add(axesHelper);
 
-  scene.add(arrowHelper1);
-  scene.add(arrowHelper2);
+  //   scene.add(arrowHelper1);
+  //   scene.add(arrowHelper2);
 }
 
 function loadmodel() {
@@ -66,22 +63,18 @@ function loadmodel() {
       if (object.type === "SkinnedMesh") {
         skeleton = object.skeleton;
         console.log("Found skeleton:", skeleton);
-        determineDefaultDirections(skeleton);
       }
-      // if (object.isMesh) {
-      //  skeleton=object.skeleton
-      //  console.log(skeleton)
-      // }
+     
     });
 
-    skeltonhelper = new THREE.SkeletonHelper(gltf.scene);
-    scene.add(skeltonhelper);
+    // skeltonhelper = new THREE.SkeletonHelper(gltf.scene);
+    // scene.add(skeltonhelper);
   });
 }
 
-export function changenew(target: any[], parent: string, child: string) {
+export function changenew(target: any[], parent: string) {
   const parentBone = model.getObjectByName(poseBones[parent]);
-  // const childBone = model.getObjectByName(poseBones[child]);
+ 
 
   let targetDirection = new THREE.Vector3(target[0], target[1], target[2]);
 
@@ -118,56 +111,22 @@ function calculateRotationToTarget(
   resultQuat: THREE.Quaternion,
   name: string
 ) {
-  const parentBone = model.getObjectByName(poseBones[name]);
-
   const _defaultDir = new THREE.Vector3(0, 1, 0);
-  const normalizedDirection = new THREE.Vector3(direction.x, direction.y, direction.z).normalize();
+  const normalizedDirection = new THREE.Vector3(
+    direction.x,
+    direction.y,
+    direction.z
+  ).normalize();
 
-//   const axis = new THREE.Vector3();
-//   axis.crossVectors(_defaultDir, direction).normalize();
-//   const angle = Math.acos(_defaultDir.dot(direction));
+  resultQuat.setFromUnitVectors(_defaultDir, normalizedDirection);
 
-//   resultQuat.setFromAxisAngle(axis, angle);
-
-    resultQuat.setFromUnitVectors(_defaultDir,normalizedDirection)
-
-  if (name == "leftUpperLeg" || name=="rightUpperLeg") {
-    // resultQuat.setFromUnitVectors(new THREE.Vector3(0,1,0),normalizedDirection)
-    // resultQuat.multiplyQuaternions(new THREE.Quaternion(0,0,1,0),resultQuat)
-    // resultQuat.multiplyQuaternions(resultQuat,new THREE.Quaternion(0,-1,0,0))
-    // resultQuat.invert()
-
-    const correctionQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+  if (name == "leftUpperLeg" || name == "rightUpperLeg") {
+    const correctionQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      Math.PI
+    );
     resultQuat.multiply(correctionQuat);
   }
-
-  
-}
-
-// Create a map of bone-specific default directions (if they differ from y-axis)
-const boneDefaultDirections = new Map();
-
-// Determine the actual default direction of each bone in your skeleton
-function determineDefaultDirections(skeleton: {
-  pose: () => void;
-  bones: any[];
-}) {
-  // Reset the skeleton to its bind pose first
-  skeleton.pose();
-
-  skeleton.bones.forEach((bone) => {
-    // Create a local-to-world direction
-    const worldDir = new THREE.Vector3(0, 1, 0).applyMatrix4(bone.matrixWorld);
-
-    // Store this direction
-    boneDefaultDirections.set(bone.uuid, worldDir);
-    // if (bone.name == "CC_Base_R_Calf") {
-    //   drawline([worldDir.x, worldDir.y, worldDir.z], arrowHelper2, "original");
-    // }
-    // You can also visualize this with arrows for debugging
-    // const arrow = new THREE.ArrowHelper(worldDir, bone.getWorldPosition(new THREE.Vector3()), 1, 0xff0000);
-    // scene.add(arrow);
-  });
 }
 
 function animate() {
