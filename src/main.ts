@@ -2,7 +2,6 @@ import * as THREE from "three";
 
 import { GLTFLoader, OrbitControls } from "three/examples/jsm/Addons.js";
 import { poseBones } from "./bones";
-import { arrowHelper1, arrowHelper2, drawline } from "./vectorvisualize";
 
 var scene: THREE.Scene,
   camera: THREE.Camera,
@@ -78,13 +77,7 @@ export function changenew(target: any[], parent: string) {
 
   let targetDirection = new THREE.Vector3(target[0], target[1], target[2]);
 
-  if (parent == "leftUpperLeg") {
-    drawline(
-      [targetDirection.x, targetDirection.y, targetDirection.z],
-      arrowHelper2,
-      "original"
-    );
-  }
+  
   // Default bone direction
   const _tempQuat = new THREE.Quaternion();
   const _tempMatrix = new THREE.Matrix4();
@@ -95,13 +88,7 @@ export function changenew(target: any[], parent: string) {
 
   calculateRotationToTarget(targetDirection, _tempQuat, parent);
 
-  if (parent == "leftUpperLeg") {
-    drawline(
-      [targetDirection.x, targetDirection.y, targetDirection.z],
-      arrowHelper1,
-      "original"
-    );
-  }
+  
 
   parentBone.quaternion.slerp(_tempQuat, 0.4);
 }
